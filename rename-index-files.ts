@@ -1,4 +1,4 @@
-import { log } from 'node:console';
+// import { log } from 'node:console';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Project } from 'ts-morph';
@@ -56,12 +56,13 @@ try {
     // Add all TypeScript/JavaScript files from the project folder for context
     project.addSourceFilesAtPaths([
         `${projectFolderPath}/**/*.{ts,tsx,js,jsx}`,
+        `${projectFolderPath}/**/*.test.{ts,tsx,js,jsx}`,
         `${projectFolderPath}/**/*.tests.{ts,tsx,js,jsx}`
     ]);
 
     // 1. Find all index.* files with any pattern in the target folder
     const allSourceFiles = project.getSourceFiles();
-    console.log(`Found ${allSourceFiles.length} total source files in the project.`);
+    // console.log(`Found ${allSourceFiles.length} total source files in the project.`);
     
     // Normalize the target folder path for comparison
     const normalizedTargetPath = normalizePath(targetFolderPath);
@@ -69,10 +70,6 @@ try {
     const indexFiles = allSourceFiles.filter(sourceFile => {
         const filePath = normalizePath(sourceFile.getFilePath());
         const fileName = path.basename(filePath);
-        // log(`Checking file: ${filePath}, ${fileName}`);
-        // log(`Target path: ${normalizedTargetPath}`);
-        // log(`Is in target folder: ${filePath.includes(normalizedTargetPath)}`);
-        // log(`Is index file: ${fileName.startsWith('index.')}`);
 
         // Check if the file is within the target folder and is an index file
         return filePath.includes(normalizedTargetPath) && fileName.startsWith('index.');
@@ -81,6 +78,7 @@ try {
 
     indexFiles.forEach((file) => {
         const filePath = file.getFilePath();
+        // log(`========Renaming file: ${filePath}=========`);
         const dir = path.dirname(filePath);
         const parentName = path.basename(dir);
         
@@ -109,18 +107,27 @@ try {
         const isStandardIndexFile = /^index\.(ts|tsx|js|jsx)$/.test(fileName);
         
         if (isStandardIndexFile) {
-            project.getSourceFiles().forEach((sf) => {
+            const referencingSourceFiles = file.getReferencingSourceFiles();
+            referencingSourceFiles.forEach((sf) => {
+                // log(`--------------Updating imports in: ${sf.getFilePath()}--------------`);
+
                 sf.getImportDeclarations().forEach((imp) => {
+                    const sourceFile = imp.getModuleSpecifierSourceFile();
+                    const sourceFilePath = sourceFile ? sourceFile.getFilePath() : 'null';
+
+                    if(sourceFilePath === filePath) {
                     const spec = imp.getModuleSpecifierValue();
-                    
+                    // log(`  Checking import: ${spec}`);
+
                     // Handle imports for standard index files only
-                    if (spec.endsWith(`/${parentName}/index`)) {
+                    if (spec.endsWith(`/index`)) {
                         // For explicit index imports: './components/Button/index' -> './components/Button/Button'
                         const basePath = spec.substring(0, spec.length - 6); // Remove "/index" suffix
                         imp.setModuleSpecifier(`${basePath}/${parentName}`);
-                    } else if (spec.endsWith(`/${parentName}`)) {
+                    } else {
                         // For implicit index imports: './components/Button' -> './components/Button/Button'
                         imp.setModuleSpecifier(`${spec}/${parentName}`);
+                    }
                     }
                 });
             });
