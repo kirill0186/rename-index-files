@@ -1,0 +1,23 @@
+{
+  "name": "rename-index-files",
+  "version": "1.0.0",
+  "description": "A utility to rename index files to match their parent directory names. Usage: npm run start -- [target-folder] [tsconfig-path] [project-folder]",
+  "main": "rename-index-files.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx rename-index-files.ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "typescript",
+    "refactoring"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "ts-morph": "^26.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
